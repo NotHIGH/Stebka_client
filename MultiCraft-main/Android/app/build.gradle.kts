@@ -92,6 +92,10 @@ val prepareAssetsFiles = tasks.register("prepareAssetsFiles") {
 			into("$assetsFolder/client/shaders")
 		}
 		copy {
+			from("$projRoot/clientmods")
+			into("$assetsFolder/clientmods")
+		}
+		copy {
 			from("../native/deps/irrlicht/shaders")
 			into("$assetsFolder/client/shaders/Irrlicht")
 		}
