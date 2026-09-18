@@ -1,0 +1,33 @@
+name: lua_lint
+
+# Lint on lua changes on builtin or if workflow changed
+on:
+  push:
+    paths:
+      - 'builtin/**.lua'
+      - '.github/workflows/**.yml'
+  pull_request:
+    paths:
+      - 'builtin/**.lua'
+      - '.github/workflows/**.yml'
+
+jobs:
+  luacheck:
+    name: "Builtin Luacheck and Unit Tests"
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+    - uses: leafo/gh-actions-lua@v10
+      with:
+        luaVersion: "5.1.5"
+    - uses: leafo/gh-actions-luarocks@v4
+
+    - name: Install luarocks tools
+      run: |
+        luarocks install --local luacheck
+        luarocks install --local busted
+
+    - name: Run checks
+      run: |
+        $HOME/.luarocks/bin/luacheck builtin
+        $HOME/.luarocks/bin/busted builtin
