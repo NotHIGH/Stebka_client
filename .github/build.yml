@@ -1,0 +1,75 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Find Gradle project
+        id: gradle
+        shell: bash
+        run: |
+          GRADLEW="$(find . -type f -name gradlew -print -quit)"
+
+          if [ -z "$GRADLEW" ]; then
+            echo "Ошибка: файл gradlew не найден"
+            exit 1
+          fi
+
+          GRADLE_DIR="$(dirname "$GRADLEW")"
+          echo "Gradle directory: $GRADLE_DIR"
+          echo "dir=$GRADLE_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Make Gradle executable
+        working-directory: ${{ steps.gradle.outputs.dir }}
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK
+        working-directory: ${{ steps.gradle.outputs.dir }}
+        run: ./gradlew clean assembleDebug --no-daemon --stacktrace
+
+      - name: Collect APK
+        shell: bash
+        run: |
+          mkdir -p apk-output
+
+          find "${{ steps.gradle.outputs.dir }}" \
+            -type f \
+            -name "*.apk" \
+            -exec cp {} apk-output/ \;
+
+          if [ -z "$(find apk-output -type f -name '*.apk' -print -quit)" ]; then
+            echo "Ошибка: APK не найден"
+            exit 1
+          fi
+
+          ls -lh apk-output
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stebka-client-debug-APK
+          path: apk-output/*.apk
+          if-no-files-found: error
